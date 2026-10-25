@@ -1,8 +1,8 @@
 # AI Agent — Assignment 1
 
-Agent local có Google Drive, Google Calendar, Gmail (chỉ đọc) và bộ nhớ RAG.
+A local agent with Google Drive, Google Calendar, read-only Gmail access, and RAG memory.
 
-## Cấu trúc
+## Project structure
 
 ```text
 Assignemnt-1/
@@ -31,113 +31,123 @@ Assignemnt-1/
 └── tests/
 ```
 
-Agent, HTTP API, CLI và telemetry nằm trong các package riêng dưới `src/`.
-Cấu hình ứng dụng nằm trong `src/configs/config.py`; system prompt nằm trong
-`src/configs/prompts.yaml`. Mỗi tool có một file YAML riêng trong
-`src/configs/tools/`, gồm `name`, `description`, `input_schema`, `required_scopes`.
-Code xử lý và liên kết handler vẫn ở `src/tools/`; YAML không chứa code thực thi.
-Các định nghĩa được kiểm tra khi khởi động, gồm tên khớp filename, schema và scopes.
-Sau khi sửa prompt hoặc YAML tool, khởi động lại server để nạp phiên bản mới.
+The agent, HTTP API, CLI, and telemetry live in separate packages under `src/`.
+Application settings are defined in `src/configs/config.py`, and the system prompt
+is stored in `src/configs/prompts.yaml`. Each tool has its own YAML file under
+`src/configs/tools/` with `name`, `description`, `input_schema`, and `required_scopes`.
+Handlers and their bindings remain in `src/tools/`; the YAML files contain no
+executable code. Tool definitions are validated at startup, including filename/name
+consistency, schemas, and scopes. Restart the server after changing a prompt or
+tool YAML file to load the updated definitions.
 
-## Chạy server
+## Run the server
 
 ```bash
 uv venv --python 3.12
 uv pip install --python .venv/bin/python -r requirements.txt
 ```
 
-Nếu chưa có file môi trường:
+If you do not have an environment file yet:
 
 ```bash
 cp .env.example .env
 ```
 
-Điền API key Anthropic và OpenAI trong `.env`. Cần Qdrant để dùng bộ nhớ;
-`deploy/docker/docker-compose.yml` cung cấp bộ observability nếu cần:
+Set your Anthropic and OpenAI API keys in `.env`. Qdrant is required for memory.
+The Compose file provides Qdrant and the observability services:
 
 ```bash
 docker compose -f deploy/docker/docker-compose.yml up -d
 ```
 
-Model mặc định: **Claude Haiku 5.5**, effort **low**. Có thể đặt trong `.env`:
+The configured default model is **Claude Haiku 5.5**, with **low** effort.
+Override these settings in `.env`:
 
 ```dotenv
 LLM_MODEL=claude-haiku-5-5
 LLM_EFFORT=low
 ```
 
-Effort được gửi qua `output_config.effort`; Haiku 5.5 tự quyết định lượng thinking.
+The client sends the effort setting through `output_config.effort`.
 
 ```bash
 .venv/bin/python -m src.api.server
 ```
 
-Mở http://localhost:9004. Trang sẽ yêu cầu đăng nhập Google trước khi vào chat.
+Open http://localhost:9004. The page requires Google sign-in before opening the chat.
 
-CLI:
+To use the CLI:
 
 ```bash
 .venv/bin/python -m src.cli.main
 ```
 
-Khởi chạy kèm observability từ thư mục gốc:
+To start the application with observability services from the project root:
 
 ```bash
 bash scripts/start.sh
 # Windows PowerShell: ./scripts/start.ps1
 ```
 
-Ứng dụng mặc định nạp `.env` ngay tại thư mục gốc `Assignemnt-1/`, bất kể thư mục
-làm việc hiện tại. Có thể đặt `AGENT_ENV_FILE` tới file khác khi triển khai; đường
-dẫn tương đối của biến này được tính từ thư mục gốc project. Các biến môi trường
-đã được cấp cho process được ưu tiên hơn giá trị trong file `.env`.
+The application loads `.env` from the `Assignemnt-1/` project root regardless of
+the current working directory. Set `AGENT_ENV_FILE` to use another environment
+file during deployment; relative paths for this setting are resolved from the
+project root. Existing process environment variables take precedence over values
+in `.env`.
 
+## Connect your Gmail account
 
-## Kết nối Gmail của bạn
+Connecting Gmail in ChatGPT does not grant this local project access to your
+mailbox. The project requires its own Google OAuth authorization.
 
-Kết nối Gmail trong ChatGPT không cấp quyền cho project local này.
-Project cần OAuth riêng cho tài khoản Google của bạn.
+1. Enable the **Gmail API** in the Google Cloud project that owns your OAuth client.
+2. Configure Google Auth Platform. If the app is in External / Testing mode, add
+   your Gmail account under **Audience → Test users**.
+3. Use a **Web application** OAuth client in `src/configs/client_secret.json`, or set
+   `GOOGLE_WEB_CLIENT_FILE` in `.env` to another OAuth client file. Register the exact
+   redirect URI `http://localhost:9004`, without a trailing slash.
+4. Open http://localhost:9004 and choose **Sign in with Google**.
+5. Select your account and grant read-only Gmail access. After authentication, the
+   browser returns to the chat. Your account address and the **Sign out** button
+   appear at the top of the page.
 
-1. Trong Google Cloud project sở hữu OAuth client, bật **Gmail API**.
-2. Cấu hình Google Auth Platform. Nếu app ở chế độ External / Testing,
-   thêm tài khoản Gmail của bạn vào **Audience → Test users**.
-3. Dùng OAuth client loại **Web application** trong `src/configs/client_secret.json`, hoặc đặt
-   `GOOGLE_WEB_CLIENT_FILE` trong `.env` tới file OAuth client khác.
-   Redirect URI phải khớp chính xác `http://localhost:9004` (không có dấu `/` cuối).
-   File client hiện tại đã liệt kê URI này.
-4. Mở http://localhost:9004 → **Đăng nhập bằng Google**.
-5. Chọn tài khoản và cấp quyền đọc Gmail. Sau khi thành công, trình duyệt tự về chat;
-   địa chỉ tài khoản và nút **Đăng xuất** nằm ở đầu trang.
-
-Cấu hình tùy chọn trong `.env`:
+Optional settings in `.env`:
 
 ```dotenv
 GOOGLE_WEB_CLIENT_FILE=client_secret.json
 GOOGLE_WEB_REDIRECT_URI=http://localhost:9004
 ```
 
-Chưa đăng nhập thì các API chat, lịch sử thao tác và tài khoản trả về `401`.
-Cookie chỉ chứa mã phiên ngẫu nhiên với `HttpOnly` và `SameSite=Lax`; token Google
-được giữ ở server trong bộ nhớ. Phiên hết hạn sau 8 giờ hoặc khi server khởi động lại.
-Đăng xuất hủy phiên local. Chat, audit và token Gmail của mỗi phiên đăng nhập
-được giữ riêng. Google Drive, Calendar và bộ nhớ RAG vẫn dùng cấu hình local của
-project; đây chưa phải hệ thống đa người dùng cho các dịch vụ đó.
+Before sign-in, the chat, audit, and account APIs return `401`.
+The session cookie contains only a random identifier and uses `HttpOnly` and
+`SameSite=Lax`. Google tokens are held in server memory. Sessions expire after
+eight hours or when the server restarts. Signing out invalidates the local
+session. Chat history, audit records, and Gmail tokens are isolated by signed-in
+session. Google Drive, Calendar, and RAG memory still use the project's local
+configuration; those services do not yet provide multi-user isolation.
 
-## Đăng nhập Gmail cho CLI (tùy chọn)
+## Sign in to Gmail for the CLI (optional)
 
-Giao diện web không cần lệnh này. Nếu dùng CLI `.venv/bin/python -m src.cli.main`:
+Web sign-in does not require this command. When using the CLI
+(`.venv/bin/python -m src.cli.main`), run:
 
-   ```bash
-   .venv/bin/python -m src.services.gmail_service
-   ```
+```bash
+.venv/bin/python -m src.services.gmail_service
+```
 
-Chọn đúng tài khoản Google và cấp quyền đọc Gmail trong trình duyệt.
-Quá trình chờ tối đa 5 phút. Token CLI được lưu riêng vào `gmail_token.json`
-với quyền file `600`, không thay token Calendar và không đưa vào Git.
-Web login không đọc hoặc ghi đè token CLI.
-Đăng nhập Calendar cho CLI bằng `.venv/bin/python -m src.services.calendar_service`.
+Select the correct Google account and grant read-only Gmail access in your
+browser. The login process waits for up to five minutes. The CLI token is stored
+separately in `gmail_token.json` with file permissions `600`. It does not replace
+the Calendar token and is excluded from Git. Web sign-in does not read or
+overwrite the CLI token.
 
-Cấu hình tùy chọn trong `.env`:
+To sign in to Calendar for the CLI:
+
+```bash
+.venv/bin/python -m src.services.calendar_service
+```
+
+Optional settings in `.env`:
 
 ```dotenv
 GOOGLE_GMAIL_CLIENT_FILE=credential.json
@@ -145,63 +155,69 @@ GOOGLE_GMAIL_TOKEN_FILE=gmail_token.json
 GOOGLE_GMAIL_OAUTH_PORT=8000
 ```
 
-CLI dùng redirect URI `http://localhost:8000` với Web client.
-Nếu đổi cổng, cập nhật redirect URI tương ứng trong Google Cloud.
+The CLI uses `http://localhost:8000` as the redirect URI for a Web application
+client. If you change the port, update the corresponding redirect URI in Google
+Cloud.
 
-Mọi đường dẫn credential/token tương đối trong cấu hình được tính từ
-`src/configs/`, ví dụ `GOOGLE_WEB_CLIENT_FILE=client_secret.json` trỏ tới
-`src/configs/client_secret.json`. Có thể dùng đường dẫn tuyệt đối để đặt file
-ở vị trí khác. `.env` và tài nguyên ứng dụng được nạp theo đường dẫn của project,
-không phụ thuộc thư mục làm việc hiện tại.
-Nếu cổng đang bận, dùng cổng khác đã đăng ký hoặc dừng dịch vụ chiếm cổng.
+All relative credential and token paths are resolved from `src/configs/`.
+For example, `GOOGLE_WEB_CLIENT_FILE=client_secret.json` points to
+`src/configs/client_secret.json`. Use an absolute path to store a file elsewhere.
+The environment file and application resources are resolved from the project
+location, independently of the current working directory. If a port is already
+in use, choose another registered port or stop the service using it.
 
-Sau khi đăng nhập, có thể hỏi trong giao diện chat:
+After signing in, you can ask the agent:
 
-- “Đọc và tóm tắt 5 email mới nhất trong hộp thư đến.”
-- “Tìm email chưa đọc trong 7 ngày qua.”
-- “Tìm email từ someone@example.com về hóa đơn.”
+- "Read and summarize the five most recent emails in my inbox."
+- "Find unread emails from the last seven days."
+- "Find emails from someone@example.com about invoices."
 
-Tool ưu tiên khi đọc/tóm tắt email là `search_and_read_gmail_messages`: backend
-tìm và lấy nội dung bằng batch rồi trả các `body` cho LLM trong cùng một kết quả.
-Luồng thông thường của một trang email cần **2 lần gọi LLM**: chọn tool → tóm tắt.
-Nếu cần phân trang, xử lý lỗi hoặc thêm công cụ, số lần gọi có thể tăng.
+The preferred tool for reading and summarizing email is
+`search_and_read_gmail_messages`. The backend searches for messages and retrieves
+their content in a batch, returning the message bodies to the LLM in a single
+tool result. A typical single-page workflow uses **two LLM calls**: tool selection,
+then summarization. Pagination, error recovery, or additional tools may require
+more calls.
 
-`list_gmail_messages` vẫn dùng khi chỉ cần danh sách/preview, và
-`read_gmail_message` dùng khi đã biết ID của một email cụ thể. Các tool không gửi,
-xóa hoặc đánh dấu đã đọc email. Nội dung dài hơn 20.000 ký tự sẽ bị cắt và
-gắn cờ; tệp đính kèm chỉ liệt kê tên. Email cần được đọc sẽ được gửi tới
-model Anthropic đang cấu hình để agent xử lý câu hỏi của bạn.
+Use `list_gmail_messages` for a list or preview, and `read_gmail_message` when a
+specific message ID is already known. These tools do not send, delete, or mark
+emails as read. Content longer than 20,000 characters is truncated and flagged;
+attachments are listed by filename only. Email content needed to answer your
+request is sent to the configured Anthropic model.
 
-Gmail lấy nội dung bằng `format=full` theo batch (tối đa 20 email mỗi trang),
-thay cho việc lấy metadata từng email rồi tải lại nội dung. Trong một lượt
-`Agent.run`, kết quả batch được giữ tạm để `read_gmail_message` dùng lại;
-tool tìm kiếm vẫn chỉ trả header và snippet cho model. Dữ liệu tạm được xóa
-khi lượt xử lý kết thúc, kể cả khi lỗi, và không dùng chung giữa các lượt hoặc
-tài khoản. Tệp đính kèm nhị phân không được tải xuống; phần nội dung văn bản
-lớn lưu riêng có thể cần thêm request khi đọc.
+Gmail retrieves content using `format=full` in batches of up to 20 messages per
+page, rather than fetching metadata for each message and then downloading its
+content again. During one `Agent.run`, batch results are cached temporarily so
+`read_gmail_message` can reuse them. The search-only tool still returns headers
+and snippets to the model. Temporary data is cleared when the run ends, including
+on errors, and is not shared between runs or accounts. Binary attachments are
+not downloaded; large text bodies stored separately may require an additional
+request when read.
 
-Với 3 email thông thường, luồng tìm rồi đọc cả 3 giảm từ 7 request HTTP Gmail
-xuống 2 (1 tìm kiếm + 1 batch). Batch vẫn tính quota cho từng API call bên trong.
-Tool gộp tái sử dụng phần batch này, không tạo thêm lượt HTTP để đọc từng email.
-Trong Tempo có span `gmail.batch_get` với `gmail.batch_size` và span
-`gmail.read_message` với `gmail.cache_hit` để kiểm tra số liệu thực tế.
+For three ordinary messages, the search-then-read flow uses two Gmail HTTP
+requests instead of seven: one search request and one batch request. Gmail still
+charges quota for each API call inside the batch. The combined tool reuses this
+batch implementation without issuing another HTTP request for each message.
+In Tempo, inspect the `gmail.batch_get` span with `gmail.batch_size` and the
+`gmail.read_message` span with `gmail.cache_hit` to check actual behavior.
 
-Nếu báo thiếu quyền hoặc token hết hạn/bị thu hồi trên web, đăng xuất rồi đăng nhập lại.
-Với CLI, chạy lại `.venv/bin/python -m src.services.gmail_service`.
-Nếu báo API bị từ chối, kiểm tra Gmail API và tài khoản Test users trong đúng
-Google Cloud project của OAuth client.
+For missing permissions or expired/revoked web tokens, sign out and sign in
+again. For the CLI, rerun `.venv/bin/python -m src.services.gmail_service`.
+If the API rejects a request, verify that the Gmail API is enabled and that your
+account is included in Test users in the OAuth client's Google Cloud project.
 
-Trang đăng nhập web phân biệt lỗi cấu hình client, mã đăng nhập hết hạn, lỗi
-mạng, thiếu quyền Gmail và Gmail API chưa bật. Khi API chưa bật, trang có liên
-kết tới Google Cloud project của OAuth client để bật API. Log server chỉ ghi
-bước thất bại và mã lỗi; không ghi nội dung ngoại lệ OAuth hoặc URL callback.
+The web sign-in page distinguishes client configuration errors, expired login
+codes, network errors, missing Gmail permissions, and a disabled Gmail API.
+When the API is disabled, the page links to the OAuth client's Google Cloud
+project so you can enable it. Server logs record only the failed step and error
+code, without OAuth exception contents or callback URLs.
 
-Tham khảo: [Google Gmail Python quickstart](https://developers.google.com/workspace/gmail/api/quickstart/python).
+Reference: [Google Gmail Python quickstart](https://developers.google.com/workspace/gmail/api/quickstart/python).
 
-## Kiểm tra
+## Tests
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Các bài kiểm tra dùng dữ liệu giả, không đọc hộp thư thật hay gọi model.
+The tests use mock data and do not read a real mailbox or call a model.
