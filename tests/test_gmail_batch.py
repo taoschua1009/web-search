@@ -243,7 +243,10 @@ class GmailBatchTests(unittest.TestCase):
             agent = Agent()
             self.assertEqual(agent.run("Đọc và tóm tắt email"), "Summary from complete bodies")
             self.assertEqual(client.return_value.messages.create.call_count, 2)
-        tool_result = json.loads(agent.conversation_history[2]["content"][0]["content"])["result"]
+        envelope = json.loads(agent.conversation_history[2]["content"][0]["content"])["result"]
+        # Mail content reaches the model only as labelled, untrusted data.
+        self.assertEqual(envelope["untrusted_content"]["source"], "search_and_read_gmail_messages")
+        tool_result = envelope["data"]
         self.assertEqual(tool_result["count"], 3)
         for item in tool_result["messages"]:
             self.assertIn("Body " + item["id"], item["body"])

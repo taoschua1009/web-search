@@ -2,8 +2,8 @@
 Read File Tool - Read and convert files to Markdown using MarkItDown.
 """
 
-from src.registry.models import ToolDefinition
 from src.configs.tool_loader import tool_config
+from src.registry.models import ToolDefinition
 from src.services.file_reader import read_file
 
 

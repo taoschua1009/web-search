@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Briefing Room · Company Research</title>
+    <link rel="stylesheet" href="/assets/research.css" />
+    <script src="/assets/research.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/research"
+        ><span class="brandmark">B</span
+        ><span>Briefing Room<small>Company intelligence</small></span></a
+      >
+      <nav aria-label="Điều hướng">
+        <a href="/research" class="active">Nghiên cứu</a
+        ><button id="approvalNav" class="navlink">
+          Phê duyệt <span id="approvalCount" class="count">0</span></button
+        ><a href="/agents">Agents</a
+        ><a href="/chat">Chat</a>
+      </nav>
+      <div class="account">
+        <span id="modeBadge" class="badge">Đang tải</span
+        ><span id="accountEmail"></span>
+        <form action="/auth/logout" method="post">
+          <button class="quiet" type="submit">Đăng xuất</button>
+        </form>
+      </div>
+    </header>
+    <div
+      id="notice"
+      class="notice"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+    <div id="app" class="workspace">
+      <aside id="inboxPane" class="inbox-pane">
+        <div class="eyebrow">01 / NGUỒN ĐẦU VÀO</div>
+        <h2>Hộp thư khách hàng</h2>
+        <p class="muted">
+          Chọn email cần nghiên cứu. Mỗi công ty có một hồ sơ riêng.
+        </p>
+        <form id="demoDatasetForm" action="/auth/demo" method="post" hidden>
+          <label class="small muted" for="demoDataset">Bộ email mẫu</label>
+          <select id="demoDataset" name="dataset" aria-label="Bộ email mẫu">
+            <option value="customer">6 email khách hàng bạn cung cấp</option>
+            <option value="synthetic">Tình huống giả lập (3 công ty)</option>
+          </select>
+          <button type="submit">Đổi bộ mẫu</button>
+          <p class="small muted">Đổi bộ mẫu mở một phiên demo riêng.</p>
+        </form>
+        <form id="mailSearch" class="search">
+          <input
+            id="mailQuery"
+            aria-label="Tìm email Gmail"
+            value="in:inbox"
+            maxlength="500"
+          /><button type="submit" aria-label="Tìm email">↗</button>
+        </form>
+        <div class="inbox-tools">
+          <label><input type="checkbox" id="selectAll" /> Chọn tất cả</label
+          ><span id="mailCount" class="muted"></span>
+        </div>
+        <div id="mailList" class="mail-list">
+          <p class="muted">Đang tải email…</p>
+        </div>
+        <form id="researchForm" class="research-form">
+          <label
+            >Múi giờ<input id="timezone" value="Asia/Ho_Chi_Minh" required
+          /></label>
+          <label
+            >Thời lượng hẹn (phút)<input
+              id="duration"
+              type="number"
+              min="5"
+              max="480"
+              value="30"
+              required
+          /></label>
+          <button id="researchButton" class="primary" type="submit">
+            Nghiên cứu email đã chọn <span>↗</span>
+          </button>
+        </form>
+        <p id="scopeNote" class="small muted"></p>
+        <a
+          id="connectGoogle"
+          class="connect"
+          href="/auth/login?research=1"
+          hidden
+          >Kết nối quyền Gmail + Calendar ↗</a
+        >
+      </aside>
+      <main id="mainPane">
+        <section id="homeView">
+          <div class="hero">
+            <div>
+              <div class="eyebrow">TỪ EMAIL ĐẾN THÔNG TIN CÓ NGUỒN</div>
+              <h1>Biết rõ đối tác.<br /><span>Sẵn sàng cho cuộc hẹn.</span></h1>
+              <p>
+                Thông tin công ty, lịch tuần sau và những điều cần lưu ý — trong
+                một báo cáo có thể kiểm chứng.
+              </p>
+            </div>
+            <div class="hero-note">
+              <span class="live-dot"></span> 7 vai trò · 1 luồng nghiên cứu
+              <p>Website · Tin tức · Tri thức · Calendar</p>
+            </div>
+          </div>
+          <div id="demoBanner" class="demo-banner" hidden>
+            DEMO · Các công ty, email và nguồn bên dưới đều là dữ liệu mô phỏng.
+            Không gửi hoặc xóa email thật.
+          </div>
+          <section class="flow">
+            <div class="eyebrow">QUY TRÌNH</div>
+            <div id="roleStrip" class="role-strip"></div>
+          </section>
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">02 / HỒ SƠ DOANH NGHIỆP</div>
+              <h2>Các công ty của bạn</h2>
+            </div>
+            <span id="companyCount" class="muted"></span>
+          </div>
+          <div id="batchProgress" aria-live="polite"></div>
+          <div id="unresolved"></div>
+          <div id="companyGrid" class="company-grid">
+            <div class="empty">
+              <span>↗</span>
+              <h3>Bắt đầu từ một email</h3>
+              <p>
+                Chọn email ở cột bên trái để tìm hiểu công ty, kiểm tra lịch và
+                chuẩn bị cuộc hẹn.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section id="reportView" hidden></section>
+        <section id="approvalView" hidden>
+          <div class="eyebrow">03 / QUYẾT ĐỊNH CỦA BẠN</div>
+          <h1>Hàng chờ phê duyệt</h1>
+          <p class="muted">
+            Xem đúng người nhận và toàn bộ nội dung trước khi duyệt. Mỗi lần
+            chỉnh sửa tạo một phiên bản mới.
+          </p>
+          <div id="actionList"></div>
+        </section>
+      </main>
+    </div>
+    <footer>
+      Nguồn ở cạnh từng nhận định. Dữ liệu thiếu và giới hạn truy cập luôn được
+      ghi rõ.
+    </footer>
+  </body>
+</html>

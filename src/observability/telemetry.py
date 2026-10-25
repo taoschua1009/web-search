@@ -104,6 +104,10 @@ tool_call_counter = meter.create_counter(
 tool_error_counter = meter.create_counter(
     "agent.tool.errors", description="Total tool invocation errors"
 )
+security_event_counter = meter.create_counter(
+    "agent.security.events",
+    description="Security signals: injection flags, blocked tool calls, output redactions",
+)
 tool_latency_ms = meter.create_histogram(
     "agent.tool.latency_ms", unit="ms", description="Tool execution latency"
 )

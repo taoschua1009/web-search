@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import time
 import unittest
 from unittest.mock import Mock, patch
-from urllib.parse import parse_qs, urlsplit
 
 from fastapi.testclient import TestClient
 from google.oauth2.credentials import Credentials
@@ -77,9 +76,10 @@ class WebLoginTests(unittest.TestCase):
         self.assertNotIn("fake-user-token", cookie)
         self.assertNotIn("fake-secret", cookie)
         self.assertTrue(self.flow_factory.call_args.kwargs["autogenerate_code_verifier"])
-        self.assertEqual(self.flow_factory.call_args.kwargs["scopes"], gmail.SCOPES)
+        # One sign-in grants Gmail and Calendar; no separate "connect" step is needed.
+        self.assertEqual(self.flow_factory.call_args.kwargs["scopes"], web_auth.RESEARCH_SCOPES)
 
-    def test_successful_callback_opens_chat_and_returns_account(self):
+    def test_successful_callback_opens_workflow_and_keeps_chat_available(self):
         response = self.sign_in()
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.headers["location"], "/")
@@ -88,7 +88,10 @@ class WebLoginTests(unittest.TestCase):
         self.assertNotIn("fake-user-token", response.headers["set-cookie"])
         self.assertIsNone(self.client.cookies.get(web_auth.OAUTH_COOKIE))
         self.assertEqual(self.client.get("/api/me").json(), {"email": "owner@example.com"})
-        self.assertIn('id="chatContainer"', self.client.get("/").text)
+        self.assertEqual(self.client.get("/").headers["location"], "/research")
+        self.assertIn('id="researchForm"', self.client.get("/research").text)
+        self.assertIn('href="/chat"', self.client.get("/research").text)
+        self.assertIn('id="chatContainer"', self.client.get("/chat").text)
         self.assertEqual(self.client.get("/login").headers["location"], "/")
 
     def test_mismatched_state_cannot_exchange_code(self):
@@ -224,7 +227,8 @@ class WebLoginTests(unittest.TestCase):
             self.sign_in(other)
             first_agent, second_agent = Mock(), Mock()
             for agent in (first_agent, second_agent):
-                agent.get_audit_log.return_value = []
+                agent.audit_mark.return_value = 0
+                agent.audit_since.return_value = []
             first_agent.run.side_effect = lambda message: gmail._get_credentials().token
             second_agent.run.side_effect = lambda message: gmail._get_credentials().token
             with patch("src.api.server.Agent", side_effect=[first_agent, second_agent]):

@@ -1,0 +1,53 @@
+{
+  "provenance": {
+    "type": "user_supplied_screenshot",
+    "filename": "Screenshot 2026-10-25 at 8.42.31 PM.png",
+    "note": "Sample email inputs supplied by the user. No sender addresses, subjects, message dates, exact meeting times, or attachment files were supplied. Website URLs and company names are input data, not verified research results."
+  },
+  "emails": [
+    {
+      "id": "sample-fpt-software",
+      "sender_name": "Nguyễn Văn A",
+      "company": "FPT Software",
+      "website": "https://fptsoftware.com",
+      "content": "Chúng tôi muốn tìm hiểu giải pháp AI cho doanh nghiệp."
+    },
+    {
+      "id": "sample-vinamilk",
+      "sender_name": "Trần Minh Đức",
+      "company": "Vinamilk",
+      "website": "https://www.vinamilk.com.vn",
+      "content": "Mong muốn trao đổi về ứng dụng AI trong quản lý tài liệu."
+    },
+    {
+      "id": "sample-samsung-vietnam",
+      "sender_name": "Sarah Lee",
+      "company": "Samsung Electronics Vietnam",
+      "website": "https://www.samsung.com/vn/",
+      "content": "Xin hẹn buổi giới thiệu giải pháp vào tuần tới.",
+      "meeting_clarification": "Email mẫu chỉ nói tuần tới; chưa có ngày gửi, ngày/giờ hẹn cụ thể, thời lượng hoặc múi giờ để xác nhận một cuộc hẹn."
+    },
+    {
+      "id": "sample-shopee-vietnam",
+      "sender_name": "David Chen",
+      "company": "Shopee Vietnam",
+      "website": "https://shopee.vn",
+      "content": "Chúng tôi quan tâm đến giải pháp OCR."
+    },
+    {
+      "id": "sample-viettel-solutions",
+      "sender_name": "Nguyễn Hoàng Anh",
+      "company": "Viettel Solutions",
+      "website": "https://viettelsolutions.vn",
+      "content": "Đính kèm hồ sơ năng lực để hai bên tham khảo.",
+      "attachment_notice": "Email mẫu nhắc hồ sơ năng lực đính kèm, nhưng ảnh chưa cung cấp tệp; chưa thể đọc hoặc phân tích hồ sơ."
+    },
+    {
+      "id": "sample-bosch-vietnam",
+      "sender_name": "Emily Wong",
+      "company": "Bosch Global Software Technologies Vietnam",
+      "website": "https://www.bosch.com/vn",
+      "content": "Chúng tôi muốn trao đổi về giải pháp AI Automation."
+    }
+  ]
+}

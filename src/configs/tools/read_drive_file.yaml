@@ -12,3 +12,5 @@ input_schema:
   - file_id
 required_scopes:
 - drive:read
+risk: low
+untrusted_output: true

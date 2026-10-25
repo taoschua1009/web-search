@@ -1,13 +1,17 @@
 name: read_file
 description: 'Read a local file and convert its content to Markdown. Supports many formats: PDF, DOCX,
-  XLSX, PPTX, images, text files, and more. Provide the full file path.'
+  XLSX, PPTX, images, text files, and more. Provide the full file path. Only files inside the allowed folders can be read; credential files never.'
 input_schema:
   type: object
+  additionalProperties: false
   properties:
     file_path:
       type: string
+      maxLength: 1024
       description: The full path to the local file to read.
   required:
   - file_path
 required_scopes:
 - drive:read
+risk: low
+untrusted_output: true

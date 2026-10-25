@@ -16,13 +16,14 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from src.configs.config import (
-    GOOGLE_OAUTH_CLIENT_FILE,
-    GOOGLE_TOKEN_FILE,
-    GOOGLE_CALENDAR_ID,
-    GOOGLE_OAUTH_PORT,
     CALENDAR_TIMEZONE,
+    GOOGLE_CALENDAR_ID,
+    GOOGLE_OAUTH_CLIENT_FILE,
+    GOOGLE_OAUTH_PORT,
+    GOOGLE_TOKEN_FILE,
 )
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
@@ -63,6 +64,18 @@ def _get_credentials() -> Credentials:
 
 
 def _get_service():
+    from src.services.gmail_service import request_credentials
+
+    browser_credentials = request_credentials.get()
+    if browser_credentials is not None:
+        if not browser_credentials.has_scopes(SCOPES):
+            raise PermissionError(
+                "Calendar permission is not granted for the signed-in Google account. Tell the user to "
+                "open /auth/login?research=1 (or the \"Kết nối quyền Gmail + Calendar\" button on "
+                "/research), approve Calendar access, then ask again."
+            )
+        # Never fall back to another user's local token in a browser request.
+        return build("calendar", "v3", credentials=browser_credentials, cache_discovery=False)
     global _service
     if _service is None:
         _service = build("calendar", "v3", credentials=_get_credentials())
@@ -108,6 +121,32 @@ def list_events(start_date: str, days: int = 1, tz_name: str | None = None) -> l
     return events
 
 
+def get_event(event_id: str) -> dict | None:
+    """One event of the primary calendar, or None when it does not exist (any more)."""
+    try:
+        event = (
+            _get_service()
+            .events()
+            .get(calendarId=GOOGLE_CALENDAR_ID, eventId=event_id)
+            .execute()
+        )
+    except HttpError as error:
+        if error.resp.status in (404, 410):
+            return None
+        raise
+    if event.get("status") == "cancelled":
+        return None
+    start, end = event.get("start", {}), event.get("end", {})
+    return {
+        "id": event.get("id"),
+        "title": event.get("summary", "(no title)"),
+        "start": start.get("dateTime") or start.get("date"),
+        "end": end.get("dateTime") or end.get("date"),
+        "all_day": "date" in start,
+        "attendee_count": len(event.get("attendees", [])),
+    }
+
+
 def _busy_intervals(start: datetime, end: datetime, tz: ZoneInfo) -> list[tuple[datetime, datetime]]:
     body = {
         "timeMin": start.isoformat(),
@@ -116,7 +155,10 @@ def _busy_intervals(start: datetime, end: datetime, tz: ZoneInfo) -> list[tuple[
         "items": [{"id": GOOGLE_CALENDAR_ID}],
     }
     resp = _get_service().freebusy().query(body=body).execute()
-    busy = resp["calendars"][GOOGLE_CALENDAR_ID].get("busy", [])
+    calendar = resp.get("calendars", {}).get(GOOGLE_CALENDAR_ID)
+    if calendar is None or calendar.get("errors"):
+        raise PermissionError("Calendar free/busy is unavailable; availability is unknown.")
+    busy = calendar.get("busy", [])
     out = []
     for b in busy:
         out.append((

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 CONFIG_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CONFIG_DIR.parent.parent
 SRC_DIR = PROJECT_ROOT / "src"
-STATIC_DIR = SRC_DIR / "static"
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 ENV_FILE = Path(os.getenv("AGENT_ENV_FILE") or PROJECT_ROOT / ".env").expanduser()
 if not ENV_FILE.is_absolute():
@@ -13,10 +13,14 @@ if not ENV_FILE.is_absolute():
 load_dotenv(ENV_FILE)
 
 
+# Credentials and OAuth tokens live outside the source tree (git-ignored, mode 700).
+SECRETS_DIR = Path(os.getenv("SECRETS_DIR", PROJECT_ROOT / "secrets")).expanduser()
+
+
 def config_path(value: str) -> str:
-    """Resolve relative credential/token paths against this config directory."""
+    """Resolve relative credential/token paths against the secrets directory."""
     path = Path(value).expanduser()
-    return str(path if path.is_absolute() else CONFIG_DIR / path)
+    return str(path if path.is_absolute() else SECRETS_DIR / path)
 
 # LLM
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -32,6 +36,18 @@ EMBEDDING_DIM = 1536
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 MEMORY_COLLECTION = "agent_memory"
+MEMORY_TTL_DAYS = int(os.getenv("MEMORY_TTL_DAYS", "90"))
+
+# The read_file tool may only read inside these folders (os.pathsep-separated).
+# Default: the user's own Documents, Downloads and Desktop. Secrets are always refused.
+READ_FILE_ALLOWED_DIRS = [
+    Path(item).expanduser()
+    for item in os.getenv(
+        "READ_FILE_ALLOWED_DIRS",
+        os.pathsep.join(["~/Documents", "~/Downloads", "~/Desktop"]),
+    ).split(os.pathsep)
+    if item.strip()
+]
 
 # Google Drive
 GOOGLE_SERVICE_ACCOUNT_FILE = config_path(os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "credentials.json"))
@@ -52,6 +68,11 @@ GOOGLE_GMAIL_OAUTH_PORT = int(os.getenv("GOOGLE_GMAIL_OAUTH_PORT", "8000"))
 # Web login returns to the already registered root URI on port 9004.
 GOOGLE_WEB_CLIENT_FILE = config_path(os.getenv("GOOGLE_WEB_CLIENT_FILE", "client_secret.json"))
 GOOGLE_WEB_REDIRECT_URI = os.getenv("GOOGLE_WEB_REDIRECT_URI", "http://localhost:9004")
+
+# Login sessions survive restarts (encrypted on disk). A longer session means fewer sign-ins.
+LOGIN_SESSION_HOURS = float(os.getenv("LOGIN_SESSION_HOURS", "168"))
+LOGIN_SESSION_FILE = Path(os.getenv("LOGIN_SESSION_FILE", PROJECT_ROOT / ".runtime" / "login_sessions.enc"))
+LOGIN_SESSION_KEY = os.getenv("LOGIN_SESSION_KEY", "")
 
 # OpenTelemetry
 OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "ai-agent")

@@ -7,7 +7,9 @@ from pathlib import Path
 import yaml
 
 TOOLS_DIR = Path(__file__).with_name("tools")
-TOOL_FIELDS = {"name", "description", "input_schema", "required_scopes"}
+TOOL_FIELDS = {"name", "description", "input_schema", "required_scopes", "risk"}
+OPTIONAL_FIELDS = {"untrusted_output"}
+RISK_TIERS = {"low", "medium", "high"}
 
 
 @lru_cache(maxsize=1)
@@ -20,8 +22,8 @@ def load_tool_configs() -> dict[str, dict]:
     for path in files:
         with path.open(encoding="utf-8") as stream:
             data = yaml.safe_load(stream)
-        if not isinstance(data, dict) or set(data) != TOOL_FIELDS:
-            raise ValueError(f"{path.name} must define name, description, input_schema and required_scopes.")
+        if not isinstance(data, dict) or not TOOL_FIELDS <= set(data) <= TOOL_FIELDS | OPTIONAL_FIELDS:
+            raise ValueError(f"{path.name} must define name, description, input_schema, required_scopes and risk.")
         name = data["name"]
         if not isinstance(name, str) or name != path.stem:
             raise ValueError(f"Tool name must match its YAML filename: {path.name}.")
@@ -33,6 +35,10 @@ def load_tool_configs() -> dict[str, dict]:
         scopes = data["required_scopes"]
         if not isinstance(scopes, list) or not all(isinstance(scope, str) and scope.strip() for scope in scopes):
             raise ValueError(f"{path.name} required_scopes must be a list of scope names.")
+        if data["risk"] not in RISK_TIERS:
+            raise ValueError(f"{path.name} risk must be one of {sorted(RISK_TIERS)}.")
+        if not isinstance(data.get("untrusted_output", False), bool):
+            raise ValueError(f"{path.name} untrusted_output must be true or false.")
         tools[name] = data
     return tools
 

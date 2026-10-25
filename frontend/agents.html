@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Agents · Theo dõi thời gian thực</title>
+    <link rel="stylesheet" href="/assets/research.css" />
+    <link rel="stylesheet" href="/assets/agents.css" />
+    <script src="/assets/agents.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/research"
+        ><span class="brandmark">B</span
+        ><span>Briefing Room<small>Company intelligence</small></span></a
+      >
+      <nav aria-label="Điều hướng">
+        <a href="/research">Nghiên cứu</a>
+        <a href="/agents" class="active">Agents</a>
+        <a href="/chat">Chat</a>
+      </nav>
+      <div class="account">
+        <span id="accountEmail"></span>
+        <form action="/auth/logout" method="post">
+          <button class="quiet" type="submit">Đăng xuất</button>
+        </form>
+      </div>
+    </header>
+    <main class="agents-page">
+      <div class="agents-head">
+        <div>
+          <div class="eyebrow">THEO DÕI THỜI GIAN THỰC</div>
+          <h1>Cây agent đang hoạt động</h1>
+          <p class="muted">
+            Chỉ hiện những gì đang chạy: đội → công ty → agent → công cụ đang
+            dùng, kèm số lần gọi mô hình, chi phí và độ trễ của từng agent.
+          </p>
+        </div>
+        <div class="live-state">
+          <span id="liveDot" class="live-dot off"></span>
+          <span id="liveText">Đang kết nối…</span>
+          <label><input id="showFinished" type="checkbox" /> Hiện cả agent đã xong</label>
+          <button id="clearBtn" class="quiet" type="button">
+            Xóa các đội đã xong
+          </button>
+        </div>
+      </div>
+      <section id="kpis" class="a-kpis" aria-live="polite"></section>
+      <section id="teams" class="a-teams"></section>
+    </main>
+    <footer>
+      Chi phí là ước tính theo bảng giá mô hình; độ trễ là thời gian chờ mô
+      hình trả lời cho mỗi lượt gọi.
+    </footer>
+  </body>
+</html>

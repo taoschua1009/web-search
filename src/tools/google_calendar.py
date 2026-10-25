@@ -4,10 +4,9 @@ Google Calendar Tools - List events and find free time slots (read-only).
 
 from datetime import date
 
-from src.registry.models import ToolDefinition
 from src.configs.tool_loader import tool_config
+from src.registry.models import ToolDefinition
 from src.services import calendar_service
-
 
 # ============================================================
 # Tool 1: LIST CALENDAR EVENTS

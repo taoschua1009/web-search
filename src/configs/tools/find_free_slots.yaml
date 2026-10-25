@@ -26,3 +26,5 @@ input_schema:
   required: []
 required_scopes:
 - calendar:read
+risk: low
+untrusted_output: true

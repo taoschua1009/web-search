@@ -1,0 +1,58 @@
+/* Live agents monitor: a tree of what is running right now. Reuses research.css tokens. */
+.agents-page { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
+.agents-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.agents-head h1 { margin: 6px 0 4px; font-size: 30px; letter-spacing: -0.8px; }
+.live-state { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.live-state label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 0 #74d9bc88; animation: pulse 1.6s infinite; }
+.live-dot.off { background: var(--red); animation: none; box-shadow: none; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 9px #74d9bc00; } 100% { box-shadow: 0 0 0 0 #74d9bc00; } }
+
+.a-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 22px 0; }
+.a-kpi { padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.a-kpi strong { display: block; font-size: 26px; letter-spacing: -1px; color: #f5f3ff; line-height: 1.15; }
+.a-kpi span { font-size: 11px; color: var(--muted); }
+.a-kpi.running strong { color: var(--mint); }
+
+.a-empty { padding: 52px 20px; text-align: center; border: 1px dashed var(--border); border-radius: 14px; color: var(--muted); }
+.a-empty h3 { color: var(--text); margin: 0 0 6px; }
+
+/* ---- the tree ---- */
+.tree-wrap { padding: 18px 22px 20px; border: 1px solid var(--border); border-radius: 16px; background: #0d1220; }
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree ul { margin-left: 11px; }
+.tree li { position: relative; padding: 5px 0 0 22px; }
+.tree > li { padding-left: 0; }
+.tree > li + li { margin-top: 14px; padding-top: 14px; border-top: 1px solid #1b2338; }
+.tree li li::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 1px solid #2c3652; }
+.tree li li::after { content: ""; position: absolute; left: 0; top: 19px; width: 15px; border-top: 1px solid #2c3652; }
+.tree li li:last-child::before { bottom: auto; height: 19px; }
+
+.n-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; min-height: 26px; }
+.n-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mint); flex: none; animation: pulse 1.6s infinite; }
+.n-dot.done { background: #55607a; animation: none; }
+.n-dot.bad { background: var(--red); animation: none; }
+.n-name { font-weight: 650; font-size: 13.5px; }
+.team > .n-row .n-name { font-size: 15px; }
+.group-label { font-size: 12px; letter-spacing: .5px; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+.n-chip { padding: 1px 8px; border-radius: 6px; background: #a897ff22; color: #cfc6ff; font-size: 10px; letter-spacing: .5px; font-weight: 650; white-space: nowrap; }
+.n-chip.mint { background: #74d9bc22; color: var(--mint); }
+.n-chip.model { background: #1e293b; color: #b8c2db; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.n-chip.child { background: #efd09122; color: var(--yellow); }
+.n-metrics { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+.n-metrics b { color: var(--text); font-weight: 600; }
+.n-sub { font-size: 11.5px; color: var(--muted); padding: 2px 0 0 19px; }
+
+.tool-node .n-row { font-size: 12px; }
+.tool-node .tool { padding: 1px 9px; border-radius: 6px; background: #74d9bc1f; color: var(--mint); font-family: ui-monospace, Menlo, monospace; font-size: 11px; animation: blink 1.4s infinite; }
+@keyframes blink { 50% { opacity: .55; } }
+.tool-node .detail { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 560px; min-width: 0; }
+.tool-node .n-metrics { margin-left: 0; }
+.thinking { color: var(--muted); font-size: 12px; font-style: italic; }
+
+@media (max-width: 700px) {
+  .agents-page { padding: 18px 14px 40px; }
+  .n-metrics { margin-left: 0; }
+  .tool-node .detail { max-width: 220px; }
+}
+@media (prefers-reduced-motion: reduce) { .live-dot, .n-dot, .tool-node .tool { animation: none !important; } }

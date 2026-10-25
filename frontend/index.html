@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent - Assignment 1</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        .header .subtitle {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            min-width: 0;
+            gap: 8px;
+        }
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            background: #334155;
+            color: #cbd5e1;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn:hover { background: #475569; color: #f1f5f9; }
+        .btn-danger { border-color: #ef4444; color: #fca5a5; }
+        .btn-danger:hover { background: #dc2626; color: #fff; }
+
+        /* Chat area */
+        .approval-card { margin-top: 14px; padding: 14px 16px; border: 1px solid #6366f1; border-radius: 10px; background: #1e1b4b33; }
+        .approval-card h4 { margin: 0 0 6px; font-size: 14px; color: #e0e7ff; }
+        .approval-card p { margin: 4px 0; font-size: 13px; color: #cbd5e1; }
+        .approval-card .warn { color: #fcd34d; }
+        .approval-card .controls { display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+        .approval-card button { padding: 8px 16px; border-radius: 8px; border: 1px solid #475569; background: #1e293b; color: #e2e8f0; cursor: pointer; }
+        .approval-card button.approve { background: #6366f1; border-color: #6366f1; color: #fff; font-weight: 600; }
+        .approval-card button:disabled { opacity: .55; cursor: default; }
+        .approval-card .outcome { font-size: 13px; }
+        .approval-card .outcome.ok { color: #86efac; }
+        .approval-card .outcome.bad { color: #fca5a5; }
+        .approval-card a { color: #a5b4fc; }
+        .approval-card a.connect-button { display: inline-block; margin-top: 8px; padding: 8px 16px; border-radius: 8px; background: #6366f1; color: #fff; font-weight: 600; text-decoration: none; }
+        .approval-card button.approve.danger { background: #dc2626; border-color: #dc2626; }
+        .report-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .report-links a { padding: 10px 14px; border: 1px solid #6366f1; border-radius: 8px; color: #c7d2fe; text-decoration: none; white-space: normal; }
+        .report-links a.briefing-link { background: #6366f1; color: #fff; font-weight: 600; width: 100%; }
+        .chat-container {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .message.user {
+            align-self: flex-end;
+            background: #3b82f6;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .message.assistant {
+            align-self: flex-start;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message .tools-badge {
+            display: inline-flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .tool-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: #065f46;
+            color: #6ee7b7;
+            border-radius: 10px;
+            font-family: monospace;
+        }
+
+        /* Typing indicator */
+        .typing {
+            align-self: flex-start;
+            padding: 12px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+        .typing.active { display: flex; gap: 4px; align-items: center; }
+        .typing span {
+            width: 8px; height: 8px;
+            background: #64748b;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Input area */
+        .input-area {
+            background: #1e293b;
+            border-top: 1px solid #334155;
+            padding: 16px 24px;
+            display: flex;
+            gap: 12px;
+        }
+        .input-area textarea {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            min-height: 44px;
+            max-height: 120px;
+        }
+        .input-area textarea:focus { border-color: #3b82f6; }
+        .input-area textarea::placeholder { color: #64748b; }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            align-self: flex-end;
+        }
+        .send-btn:hover { background: #2563eb; }
+        .send-btn:disabled { background: #475569; cursor: not-allowed; }
+
+        /* Audit panel */
+        .audit-panel {
+            display: none;
+            position: fixed;
+            right: 0; top: 0; bottom: 0;
+            width: 420px;
+            background: #1e293b;
+            border-left: 1px solid #334155;
+            z-index: 100;
+            flex-direction: column;
+        }
+        .audit-panel.open { display: flex; }
+        .audit-panel .panel-header {
+            padding: 16px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .audit-panel .panel-header h2 { font-size: 16px; }
+        .audit-panel .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .audit-entry {
+            padding: 8px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 4px;
+        }
+        .audit-entry .status-ok { color: #4ade80; }
+        .audit-entry .status-fail { color: #f87171; }
+
+        /* Welcome */
+        .welcome {
+            text-align: center;
+            color: #64748b;
+            margin: auto;
+            padding: 40px;
+        }
+        .welcome h2 { color: #94a3b8; margin-bottom: 12px; font-size: 20px; }
+        .welcome p { font-size: 14px; line-height: 1.8; }
+        .welcome .caps { display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .welcome .cap {
+            padding: 8px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        @media (max-width: 640px) {
+            .header { padding: 14px; }
+            .header h1 { font-size: 17px; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { padding: 8px 10px; }
+            #accountEmail { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+            .chat-container { padding: 14px; }
+            .message { max-width: 100%; }
+            .welcome { padding: 16px; }
+            .input-area { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div>
+        <h1>AI Agent - Assignment 1</h1>
+        <div class="subtitle">Email · Nghiên cứu công ty · Calendar · Báo cáo có nguồn</div>
+    </div>
+    <div class="header-actions">
+        <a class="btn" href="/research">Company Research ↗</a>
+        <a class="btn" href="/agents">Agents ↗</a>
+        <span id="accountEmail" style="font-size:12px;color:#94a3b8"></span>
+        <form action="/auth/logout" method="post">
+            <button class="btn" type="submit">Đăng xuất</button>
+        </form>
+        <button class="btn" onclick="toggleAudit()">Audit Log</button>
+        <button class="btn btn-danger" onclick="clearChat()">Clear</button>
+    </div>
+</div>
+
+<!-- Chat -->
+<div class="chat-container" id="chatContainer">
+    <div class="welcome" id="welcome">
+        <h2>AI Agent</h2>
+        <p>Yêu cầu nghiên cứu email để phối hợp các agent và tạo báo cáo có nguồn.</p>
+        <div class="caps">
+            <div class="cap">Google Drive</div>
+            <div class="cap">Google Calendar</div>
+            <div class="cap">Gmail (read-only)</div>
+            <div class="cap">RAG Memory</div>
+            <div class="cap">Company Research · Cited reports</div>
+        </div>
+    </div>
+</div>
+
+<!-- Typing indicator -->
+<div class="typing" id="typing">
+    <span></span><span></span><span></span>
+</div>
+
+<!-- Input -->
+<div class="input-area">
+    <textarea id="input" placeholder="Ví dụ: Nghiên cứu 2 mail gần nhất và viết báo cáo có nguồn" rows="1"
+        onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage()}"
+        oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+</div>
+
+<!-- Audit Panel -->
+<div class="audit-panel" id="auditPanel">
+    <div class="panel-header">
+        <h2>Audit Log</h2>
+        <button class="btn" onclick="toggleAudit()">Close</button>
+    </div>
+    <div class="panel-body" id="auditBody">Loading...</div>
+</div>
+
+<script>
+const SESSION_ID = 'session-' + Date.now();
+const API = '';
+
+async function authenticatedFetch(url, options) {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+        window.location.replace('/login');
+        throw new Error('Vui lòng đăng nhập lại.');
+    }
+    return response;
+}
+
+authenticatedFetch('/api/me')
+    .then(response => response.json())
+    .then(user => { document.getElementById('accountEmail').textContent = user.email; })
+    .catch(() => {});
+
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addMessage(text, role, toolsUsed = [], reports = [], batches = [], actions = []) {
+    document.getElementById('welcome')?.remove();
+
+    const container = document.getElementById('chatContainer');
+    const div = document.createElement('div');
+    div.className = 'message ' + role;
+    div.textContent = text;
+
+    if (toolsUsed.length > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'tools-badge';
+        toolsUsed.forEach(t => {
+            const tag = document.createElement('span');
+            tag.className = 'tool-tag';
+            tag.textContent = t;
+            badge.appendChild(tag);
+        });
+        div.appendChild(badge);
+    }
+
+    if (reports.length) {
+        const links = document.createElement('div');
+        links.className = 'report-links';
+        for (const batch of batches) {
+            if (!/^\/briefings\/[a-zA-Z0-9-]+$/.test(batch.url)) continue;
+            const link = document.createElement('a');
+            link.href = batch.url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.className = 'briefing-link';
+            link.textContent = 'Mở trang báo cáo tổng hợp' + (batch.companies?.length ? ': ' + batch.companies.join(' · ') : '');
+            links.appendChild(link);
+        }
+        // One link per answer: the combined report page. Per-company links
+        // are only a fallback when no combined page exists.
+        if (!links.children.length) {
+            for (const report of reports) {
+                if (!/^\/reports\/[a-zA-Z0-9-]+$/.test(report.url)) continue;
+                const link = document.createElement('a');
+                link.href = report.url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = 'Mở báo cáo: ' + report.company + (report.mode === 'demo' ? ' · Mô phỏng' : '');
+                links.appendChild(link);
+            }
+        }
+        div.appendChild(links);
+    }
+    for (const action of actions) {
+        if (CARD_TEXT[action.kind] || action.kind === 'connect_google') div.appendChild(actionCard(action));
+    }
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function connectCard(action) {
+    const card = document.createElement('div');
+    card.className = 'approval-card';
+    const text = document.createElement('p');
+    text.textContent = 'Cần cấp quyền Google Calendar cho tài khoản này (đăng nhập lại và đồng ý).';
+    const link = document.createElement('a');
+    link.href = action.url;
+    link.className = 'connect-button';
+    link.textContent = action.title;
+    card.append(text, link);
+    return card;
+}
+
+const CARD_TEXT = {
+    create_event: {
+        heading: 'Đề xuất tạo sự kiện: ',
+        approve: 'Duyệt và tạo sự kiện',
+        note: 'Chỉ tạo trên lịch của bạn; không mời ai và không gửi thông báo.',
+        done: { created: 'Đã tạo sự kiện trong Google Calendar.', already_exists: 'Sự kiện này đã có trong Google Calendar.' },
+        rejected: 'Đã từ chối. Không tạo sự kiện.',
+    },
+    delete_event: {
+        heading: 'Đề xuất XÓA sự kiện: ',
+        approve: 'Duyệt và xóa sự kiện',
+        note: 'Sự kiện sẽ bị xóa khỏi lịch của bạn; không gửi thông báo cho ai.',
+        done: { deleted: 'Đã xóa sự kiện khỏi Google Calendar.', already_deleted: 'Sự kiện đã được xóa trước đó.' },
+        rejected: 'Đã từ chối. Sự kiện được giữ nguyên.',
+    },
+};
+
+function actionCard(action) {
+    if (action.kind === 'connect_google') return connectCard(action);
+    const text = CARD_TEXT[action.kind];
+    const p = action.payload;
+    const card = document.createElement('div');
+    card.className = 'approval-card';
+    const line = (content, cls) => {
+        const el = document.createElement('p');
+        if (cls) el.className = cls;
+        el.textContent = content;
+        card.appendChild(el);
+    };
+    const title = document.createElement('h4');
+    title.textContent = text.heading + p.title;
+    card.appendChild(title);
+    if (action.kind === 'create_event') {
+        const when = (iso, opts) => new Date(iso).toLocaleString('vi-VN', { timeZone: p.timezone, ...opts });
+        line(when(p.start, { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            + ' → ' + when(p.end, { hour: '2-digit', minute: '2-digit' }) + ' (' + p.timezone + ')');
+        if (p.location) line('Địa điểm: ' + p.location);
+        if (p.description) line(p.description);
+        if (action.conflicts === null) line('Chưa kiểm tra được trùng lịch.', 'warn');
+        else if (action.conflicts.length) {
+            const range = (c) => when(c.start, { hour: '2-digit', minute: '2-digit' }) + '–' + when(c.end, { hour: '2-digit', minute: '2-digit' });
+            line('⚠ Trùng lịch đã có: ' + action.conflicts.map(c => c.title + ' (' + range(c) + ')').join(', '), 'warn');
+            if (action.alternatives && action.alternatives.length) {
+                line('Khung giờ trống thay thế — chọn để đặt lại:');
+                const picks = document.createElement('div');
+                picks.className = 'controls';
+                for (const alt of action.alternatives) {
+                    const sameDay = when(alt.start, { day: '2-digit', month: '2-digit' }) === when(p.start, { day: '2-digit', month: '2-digit' });
+                    const label = (sameDay ? '' : when(alt.start, { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' ')
+                        + when(alt.start, { hour: '2-digit', minute: '2-digit' }) + '–' + when(alt.end, { hour: '2-digit', minute: '2-digit' });
+                    const pick = document.createElement('button');
+                    pick.type = 'button';
+                    pick.textContent = label;
+                    pick.addEventListener('click', () => {
+                        pick.disabled = true;
+                        const input = document.getElementById('input');
+                        input.value = 'Đặt lại "' + p.title + '" vào ' + label + ' (' + alt.start + ' đến ' + alt.end + ')';
+                        sendMessage();
+                    });
+                    picks.appendChild(pick);
+                }
+                card.appendChild(picks);
+            }
+        }
+    } else {
+        const fmt = (value) => p.all_day
+            ? new Date(value + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })
+            : new Date(value).toLocaleString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        line(p.all_day ? fmt(p.start) + ' (cả ngày)' : fmt(p.start) + ' → ' + new Date(p.end).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+        if (p.attendee_count) line('Sự kiện có ' + p.attendee_count + ' người tham dự.', 'warn');
+    }
+    line(text.note);
+
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+    const outcome = document.createElement('span');
+    outcome.className = 'outcome';
+    const buttons = [];
+    const decide = async (decision) => {
+        buttons.forEach(b => { b.disabled = true; });
+        outcome.className = 'outcome';
+        outcome.textContent = 'Đang xử lý…';
+        try {
+            const res = await authenticatedFetch(API + '/api/actions/' + encodeURIComponent(action.id) + '/decision', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-research-request': '1' },
+                body: JSON.stringify({ decision, version: action.version, payload_hash: action.payload_hash })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                // Refused before any write (changed/expired/not permitted): allow another try
+                // only when it could succeed.
+                outcome.className = 'outcome bad';
+                outcome.textContent = data.message || 'Không thực hiện được.';
+                if (!['ACTION_CHANGED', 'NOT_FOUND'].includes(data.code)) buttons.forEach(b => { b.disabled = false; });
+                return;
+            }
+            if (data.error) {
+                // The approval was consumed and the write failed: never retried automatically.
+                outcome.className = 'outcome bad';
+                outcome.textContent = data.error.message;
+                return;
+            }
+            if (decision === 'reject') {
+                outcome.textContent = text.rejected;
+                return;
+            }
+            outcome.className = 'outcome ok';
+            outcome.textContent = text.done[data.result?.status] || 'Đã thực hiện.';
+            if (data.result?.html_link) {
+                const link = document.createElement('a');
+                link.href = data.result.html_link;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = ' Mở sự kiện';
+                outcome.appendChild(link);
+            }
+        } catch (err) {
+            outcome.className = 'outcome bad';
+            outcome.textContent = 'Lỗi: ' + err.message;
+            buttons.forEach(b => { b.disabled = false; });
+        }
+    };
+    const overlaps = action.kind === 'create_event' && action.conflicts && action.conflicts.length > 0;
+    for (const [decision, label, cls] of [['approve', overlaps ? 'Vẫn tạo (bị trùng lịch)' : text.approve, action.kind === 'delete_event' ? 'approve danger' : 'approve'], ['reject', 'Từ chối', '']]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        if (cls) button.className = cls;
+        button.addEventListener('click', () => decide(decision));
+        buttons.push(button);
+        controls.appendChild(button);
+    }
+    controls.appendChild(outcome);
+    card.appendChild(controls);
+    return card;
+}
+
+function setTyping(active) {
+    const el = document.getElementById('typing');
+    const container = document.getElementById('chatContainer');
+    if (active) {
+        el.classList.add('active');
+        container.appendChild(el);
+        container.scrollTop = container.scrollHeight;
+    } else {
+        el.classList.remove('active');
+    }
+}
+
+async function sendMessage() {
+    const input = document.getElementById('input');
+    const btn = document.getElementById('sendBtn');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, 'user');
+    input.value = '';
+    input.style.height = 'auto';
+    btn.disabled = true;
+    setTyping(true);
+
+    try {
+        const res = await authenticatedFetch(API + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: SESSION_ID, message })
+        });
+        const data = await res.json();
+        addMessage(data.response, 'assistant', data.tools_used, data.reports || [], data.research_batches || [], data.actions || []);
+    } catch (err) {
+        addMessage('Error: ' + err.message, 'assistant');
+    } finally {
+        setTyping(false);
+        btn.disabled = false;
+        input.focus();
+    }
+}
+
+async function clearChat() {
+    try {
+        await authenticatedFetch(API + '/api/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: SESSION_ID })
+        });
+    } catch(e) {}
+
+    const container = document.getElementById('chatContainer');
+    container.innerHTML = `
+        <div class="welcome" id="welcome">
+            <h2>AI Agent</h2>
+            <p>Yêu cầu nghiên cứu email để phối hợp các agent và tạo báo cáo có nguồn.</p>
+            <div class="caps">
+                <div class="cap">Google Drive</div>
+                <div class="cap">Google Calendar</div>
+                <div class="cap">Gmail (read-only)</div>
+                <div class="cap">RAG Memory</div>
+            <div class="cap">Company Research · Cited reports</div>
+            </div>
+        </div>`;
+}
+
+async function toggleAudit() {
+    const panel = document.getElementById('auditPanel');
+    panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        try {
+            const res = await authenticatedFetch(API + '/api/audit?session_id=' + SESSION_ID);
+            const data = await res.json();
+            const body = document.getElementById('auditBody');
+
+            if (data.audit_log.length === 0) {
+                body.textContent = 'No audit logs yet.';
+                return;
+            }
+
+            body.innerHTML = data.audit_log.map(entry => `
+                <div class="audit-entry">
+                    <div><strong>${entry.tool}</strong>
+                        <span class="${entry.status === 'success' ? 'status-ok' : 'status-fail'}">
+                            [${entry.status}]
+                        </span>
+                    </div>
+                    <div>User: ${entry.user_id} (${entry.role}) | ${entry.timestamp.split('T')[1]?.split('.')[0] || ''}</div>
+                    <div>Args: ${JSON.stringify(entry.arguments).substring(0, 100)}</div>
+                </div>
+            `).join('');
+        } catch(e) {
+            document.getElementById('auditBody').textContent = 'Error loading audit log.';
+        }
+    }
+}
+</script>
+</body>
+</html>

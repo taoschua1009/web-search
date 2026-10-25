@@ -8,11 +8,13 @@ Tool Registry - 6-step pipeline:
 6. Execute Tool
 """
 
-import time
 import json
+import time
+from collections import deque
 from datetime import datetime
 from typing import Any
 from opentelemetry import trace
+from .guardrails import fence, redact
 from .models import ToolDefinition
 from src.observability import telemetry  # noqa: F401
 from src.observability.telemetry import tracer, tool_call_counter, tool_error_counter, tool_latency_ms
@@ -22,33 +24,61 @@ from src.observability.telemetry import tracer, tool_call_counter, tool_error_co
 # Step 1: VALIDATE SCHEMA
 # ============================================================
 
-def validate_schema(tool: ToolDefinition, arguments: dict) -> dict:
-    schema = tool.input_schema
-    required_fields = schema.get("required", [])
-    properties = schema.get("properties", {})
+TYPE_CHECKS = {
+    "string": lambda v: isinstance(v, str),
+    # bool is an int subclass in Python: it must not satisfy integer/number.
+    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
+    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+    "boolean": lambda v: isinstance(v, bool),
+    "array": lambda v: isinstance(v, list),
+    "object": lambda v: isinstance(v, dict),
+}
 
-    for field in required_fields:
+
+def _check(value: Any, schema: dict, path: str) -> None:
+    """Enforce the JSON-Schema subset the tool manifests use; raises ValueError."""
+    expected = schema.get("type")
+    if expected in TYPE_CHECKS and not TYPE_CHECKS[expected](value):
+        raise ValueError(f"[SCHEMA] Field '{path}' expected {expected}, got {type(value).__name__}")
+    if "enum" in schema and value not in schema["enum"]:
+        raise ValueError(f"[SCHEMA] Field '{path}' must be one of {schema['enum']}, got '{value}'")
+    if isinstance(value, str):
+        if len(value) > schema.get("maxLength", len(value)):
+            raise ValueError(f"[SCHEMA] Field '{path}' is longer than {schema['maxLength']} characters")
+        if len(value) < schema.get("minLength", 0):
+            raise ValueError(f"[SCHEMA] Field '{path}' is shorter than {schema['minLength']} characters")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            raise ValueError(f"[SCHEMA] Field '{path}' must be at least {schema['minimum']}")
+        if "maximum" in schema and value > schema["maximum"]:
+            raise ValueError(f"[SCHEMA] Field '{path}' must be at most {schema['maximum']}")
+    if isinstance(value, list):
+        if len(value) > schema.get("maxItems", len(value)):
+            raise ValueError(f"[SCHEMA] Field '{path}' has more than {schema['maxItems']} items")
+        for index, item in enumerate(value):
+            if "items" in schema:
+                _check(item, schema["items"], f"{path}[{index}]")
+    if isinstance(value, dict):
+        properties = schema.get("properties", {})
+        for field in schema.get("required", []):
+            if field not in value:
+                raise ValueError(f"[SCHEMA] Missing required field: '{path}.{field}'")
+        if schema.get("additionalProperties") is False:
+            unknown = sorted(set(value) - set(properties))
+            if unknown:
+                raise ValueError(f"[SCHEMA] Unknown field(s) not allowed: {unknown}")
+        for key, item in value.items():
+            if key in properties:
+                _check(item, properties[key], f"{path}.{key}")
+
+
+def validate_schema(tool: ToolDefinition, arguments: dict) -> dict:
+    if not isinstance(arguments, dict):
+        raise ValueError("[SCHEMA] Tool arguments must be an object")
+    for field in tool.input_schema.get("required", []):
         if field not in arguments:
             raise ValueError(f"[SCHEMA] Missing required field: '{field}'")
-
-    type_map = {"string": str, "integer": int, "number": (int, float), "boolean": bool}
-    for key, value in arguments.items():
-        if key in properties:
-            expected_type = properties[key].get("type")
-            if expected_type and expected_type in type_map:
-                if not isinstance(value, type_map[expected_type]):
-                    raise ValueError(
-                        f"[SCHEMA] Field '{key}' expected {expected_type}, got {type(value).__name__}"
-                    )
-
-    for key, value in arguments.items():
-        if key in properties:
-            enum_values = properties[key].get("enum")
-            if enum_values and value not in enum_values:
-                raise ValueError(
-                    f"[SCHEMA] Field '{key}' must be one of {enum_values}, got '{value}'"
-                )
-
+    _check(arguments, {**tool.input_schema, "required": []}, "arguments")
     return arguments
 
 
@@ -112,6 +142,19 @@ def check_scopes(user: dict, tool: ToolDefinition) -> bool:
     return True
 
 
+def enforce_risk_policy(tool: ToolDefinition) -> None:
+    """Fail closed: a high-risk (or unclassified) tool never runs from a model request.
+
+    Such actions must go through a human approval flow that is bound to the exact
+    action (see HumanApprovalAgent); the tool-call path has no approval to present.
+    """
+    if tool.risk == "high":
+        raise PermissionError(
+            f"[POLICY] Tool '{tool.name}' is high-risk or unclassified and needs human approval."
+        )
+    print(f"  [Step 3b] Risk policy OK - risk={tool.risk}")
+
+
 # ============================================================
 # Step 4: RATE LIMIT
 # ============================================================
@@ -152,19 +195,22 @@ rate_limiter = RateLimiter(max_calls=20, window_seconds=60)
 # Step 5: AUDIT LOG
 # ============================================================
 
-AUDIT_LOG: list[dict] = []
+MAX_AUDIT_ENTRIES = 2000
+AUDIT_LOG: deque[dict] = deque(maxlen=MAX_AUDIT_ENTRIES)
 
 
-def audit_log(user: dict, tool_name: str, arguments: dict, result: Any = None, error: str = None):
+def audit_log(user: dict, tool_name: str, arguments: dict, result: Any = None, error: str = None, extra: dict | None = None):
     entry = {
         "timestamp": datetime.now().isoformat(),
         "user_id": user["user_id"],
         "role": user["role"],
         "tool": tool_name,
-        "arguments": arguments,
-        "result": str(result)[:200] if result else None,
-        "error": error,
+        # Logs hold masked arguments only: secrets, addresses and long text never land here.
+        "arguments": redact(arguments),
+        "result": str(redact(result))[:200] if result else None,
+        "error": redact(error) if error else None,
         "status": "success" if not error else "failed",
+        **(extra or {}),
     }
     AUDIT_LOG.append(entry)
     status = "OK" if not error else f"FAILED: {error[:80]}"
@@ -189,7 +235,8 @@ def execute_tool(tool: ToolDefinition, arguments: dict) -> Any:
 class ToolRegistry:
     def __init__(self):
         self._tools: dict[str, ToolDefinition] = {}
-        self._audit_log: list[dict] = []
+        self._audit_log: deque[dict] = deque(maxlen=MAX_AUDIT_ENTRIES)
+        self._audit_seq = 0
 
     def register(self, tool: ToolDefinition):
         self._tools[tool.name] = tool
@@ -215,10 +262,15 @@ class ToolRegistry:
             for t in self._tools.values()
         ]
 
-    def call(self, tool_name: str, arguments: dict, api_key: str) -> dict:
+    def call(self, tool_name: str, arguments: dict, api_key: str, principal: str | None = None) -> dict:
+        """Run one tool call through the pipeline.
+
+        ``principal`` identifies the signed-in person so rate limits and the audit trail
+        are per person even though sessions share a service API key.
+        """
         print(f"\n{'='*60}")
         print(f"  TOOL CALL: {tool_name}")
-        print(f"  Arguments: {json.dumps(arguments, ensure_ascii=False)}")
+        print(f"  Arguments: {json.dumps(redact(arguments), ensure_ascii=False)}")
         print(f"{'='*60}")
 
         user = None
@@ -233,7 +285,7 @@ class ToolRegistry:
                 with tracer.start_as_current_span("step.validate_schema"):
                     tool = self.get_tool(tool_name)
                     validated_args = validate_schema(tool, arguments)
-                    print(f"  [Step 1] Schema Valid OK")
+                    print("  [Step 1] Schema Valid OK")
 
                 # Step 2: Check Authentication
                 with tracer.start_as_current_span("step.auth"):
@@ -244,15 +296,24 @@ class ToolRegistry:
                 # Step 3: Check Scopes
                 with tracer.start_as_current_span("step.scopes"):
                     check_scopes(user, tool)
+                    enforce_risk_policy(tool)
 
                 # Step 4: Check Rate Limit
                 with tracer.start_as_current_span("step.rate_limit"):
-                    rate_limiter.check(user["user_id"])
+                    rate_limiter.check(f"{user['user_id']}:{principal}" if principal else user["user_id"])
 
                 # Step 5 + 6: Execute & Audit
                 with tracer.start_as_current_span("step.execute"):
                     result = execute_tool(tool, validated_args)
-                    self._audit_log.append(audit_log(user, tool_name, arguments, result=result))
+                    extra = {"risk": tool.risk, "principal": principal}
+                    if tool.untrusted_output:
+                        # External content reaches the model only as labelled data.
+                        result, flags = fence(tool.name, result)
+                        extra["security_flags"] = flags
+                        if flags:
+                            span.set_attribute("tool.injection_flags", ",".join(flags))
+                            print(f"  [Guard] Injection-style content in result: {flags}")
+                    self._record(audit_log(user, tool_name, arguments, result=result, extra=extra))
 
                 elapsed_ms = (time.perf_counter() - t0) * 1000
                 span.set_attribute("tool.status", "success")
@@ -280,10 +341,28 @@ class ToolRegistry:
                 tool_latency_ms.record(elapsed_ms, attrs)
 
                 if user:
-                    self._audit_log.append(audit_log(user, tool_name, arguments, error=error_msg))
+                    self._record(audit_log(user, tool_name, arguments, error=error_msg, extra={"principal": principal}))
                 print(f"  [ERROR] {error_msg}")
                 print(f"{'='*60}\n")
                 return {"error": error_msg}
 
+    def _record(self, entry: dict) -> None:
+        self._audit_seq += 1
+        entry["seq"] = self._audit_seq
+        self._audit_log.append(entry)
+
+    def risk_of(self, tool_name: str) -> str:
+        """Risk tier of a tool; anything unknown counts as high (fail closed)."""
+        tool = self._tools.get(tool_name)
+        return tool.risk if tool else "high"
+
+    def audit_mark(self) -> int:
+        """A position in the audit trail; pass it to ``audit_since`` later."""
+        return self._audit_seq
+
+    def audit_since(self, mark: int) -> list[dict]:
+        """Entries recorded after ``mark``, robust to the bounded log dropping old ones."""
+        return [entry for entry in self._audit_log if entry["seq"] > mark]
+
     def get_audit_log(self) -> list[dict]:
-        return self._audit_log
+        return list(self._audit_log)

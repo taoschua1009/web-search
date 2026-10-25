@@ -1,0 +1,36 @@
+name: propose_calendar_event
+description: >-
+  Propose creating a Google Calendar event (for example "tạo lịch demo thứ 2 19:30-21:30").
+  The event is NOT created by this call: it is queued and the user must approve the exact
+  event in the workspace approval queue (/research?view=approvals). Resolve relative dates
+  yourself from the current date, use ISO 8601 local times, and default to the user's
+  timezone. No attendees are invited. Returns overlapping events, if any, plus free `alternatives`
+  of the same length, so you can warn the user and offer another time. After calling, tell the user the event is awaiting their approval; never say it
+  was created.
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    title:
+      type: string
+      maxLength: 200
+      description: Event title.
+    start:
+      type: string
+      description: Start, ISO 8601, e.g. 2026-10-26T19:30:00 (local time unless an offset is given).
+    end:
+      type: string
+      description: End, ISO 8601; between 5 minutes and 24 hours after start.
+    timezone:
+      type: string
+      description: IANA timezone; default is the user's timezone.
+    description:
+      type: string
+      maxLength: 2000
+    location:
+      type: string
+      maxLength: 200
+  required: [title, start, end]
+required_scopes:
+- calendar:read
+risk: medium

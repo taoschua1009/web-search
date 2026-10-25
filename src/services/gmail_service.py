@@ -83,10 +83,15 @@ def login() -> str:
     return "Gmail connected with read-only access. Return to http://localhost:9004."
 
 
+def _has_read_access(credentials: Credentials) -> bool:
+    """A modify grant includes read access without requesting redundant scopes."""
+    return credentials.has_scopes(SCOPES) or credentials.has_scopes(["https://www.googleapis.com/auth/gmail.modify"])
+
+
 def _get_credentials() -> Credentials:
     browser_credentials = request_credentials.get()
     if browser_credentials is not None:
-        if not browser_credentials.has_scopes(SCOPES):
+        if not _has_read_access(browser_credentials):
             raise PermissionError("Sign out and sign in again to grant Gmail read permission.")
         if not browser_credentials.valid:
             if not browser_credentials.refresh_token:
@@ -106,7 +111,7 @@ def _get_credentials() -> Credentials:
         creds = Credentials.from_authorized_user_info(info)
     except (ValueError, KeyError) as error:
         raise PermissionError("Gmail token is invalid. " + LOGIN_HINT) from error
-    if not creds.has_scopes(SCOPES):
+    if not _has_read_access(creds):
         raise PermissionError("Gmail read permission is missing. " + LOGIN_HINT)
     if not creds.valid:
         if not creds.refresh_token:

@@ -16,10 +16,13 @@ from src.configs import config, prompts, tool_loader
 
 class ProjectLayoutTests(unittest.TestCase):
     def test_required_packages_and_resources_resolve_inside_src(self):
-        for name in ("tools", "observability", "registry", "services", "static", "configs", "agents", "api", "cli"):
+        for name in ("tools", "observability", "registry", "services", "configs", "agents", "api", "cli", "schemas", "workflows"):
             self.assertTrue((config.SRC_DIR / name).is_dir(), name)
-        self.assertTrue((config.STATIC_DIR / "login.html").is_file())
-        self.assertTrue((config.STATIC_DIR / "index.html").is_file())
+        for page in ("login.html", "index.html", "research.html"):
+            self.assertTrue((config.FRONTEND_DIR / page).is_file(), page)
+        for asset in ("research.css", "research.js"):
+            self.assertTrue((config.FRONTEND_DIR / "assets" / asset).is_file(), asset)
+        self.assertFalse((config.SRC_DIR / "static").exists())
         self.assertEqual(prompts.PROMPTS_FILE.parent, config.CONFIG_DIR)
 
     def test_runtime_tool_contracts_and_system_prompt_come_from_yaml(self):
@@ -81,7 +84,7 @@ print('LAYOUT_CHECK ' + json.dumps({
     'model': config.LLM_MODEL,
     'config_dir': str(config.CONFIG_DIR),
     'env_file': str(config.ENV_FILE),
-    'static_dir': str(server.STATIC_DIR),
+    'frontend_dir': str(server.FRONTEND_DIR),
     'credential_path': config.config_path('client_secret.json'),
     'prompt_loaded': bool(prompts.agent_prompt()),
     'tools_loaded': len(__import__('src.configs.tool_loader', fromlist=['load_tool_configs']).load_tool_configs()),
@@ -100,8 +103,8 @@ print('LAYOUT_CHECK ' + json.dumps({
         self.assertEqual(data["model"], config.LLM_MODEL)
         self.assertEqual(data["config_dir"], str(config.CONFIG_DIR))
         self.assertEqual(data["env_file"], str(config.ENV_FILE))
-        self.assertEqual(data["static_dir"], str(config.STATIC_DIR))
-        self.assertEqual(data["credential_path"], str(config.CONFIG_DIR / "client_secret.json"))
+        self.assertEqual(data["frontend_dir"], str(config.FRONTEND_DIR))
+        self.assertEqual(data["credential_path"], str(config.SECRETS_DIR / "client_secret.json"))
         self.assertTrue(data["prompt_loaded"])
         self.assertEqual(data["tools_loaded"], len(tool_loader.load_tool_configs()))
         self.assertEqual(data["login_status"], 200)

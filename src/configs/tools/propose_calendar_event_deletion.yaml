@@ -1,0 +1,20 @@
+name: propose_calendar_event_deletion
+description: >-
+  Propose deleting one existing Google Calendar event (for example "xóa lịch demo hôm nay").
+  The event is NOT deleted by this call: it is queued and the user must approve the exact
+  event in a card in the chat (or /research?view=approvals). First find the event with
+  list_calendar_events (resolve the date yourself) and pass its `id`; if several events
+  match, ask the user which one. After calling, say the event is awaiting approval and
+  that nothing has been deleted yet. Never delete several events in one call.
+input_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    event_id:
+      type: string
+      maxLength: 1024
+      description: The `id` of the event, taken from list_calendar_events.
+  required: [event_id]
+required_scopes:
+- calendar:read
+risk: medium

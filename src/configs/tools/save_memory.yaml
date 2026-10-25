@@ -4,14 +4,18 @@ description: Save important information to long-term memory for future reference
   Provide a category to organize memories (e.g., 'user_preference', 'fact', 'task').
 input_schema:
   type: object
+  additionalProperties: false
   properties:
     content:
       type: string
+      maxLength: 2000
       description: The information to remember.
     category:
       type: string
+      maxLength: 40
       description: Category for organizing the memory (e.g., 'user_preference', 'fact', 'task', 'general').
   required:
   - content
 required_scopes:
 - memory:write
+risk: medium

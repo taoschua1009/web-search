@@ -23,3 +23,5 @@ input_schema:
   required: []
 required_scopes:
 - gmail:read
+risk: low
+untrusted_output: true

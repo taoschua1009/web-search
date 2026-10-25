@@ -2,9 +2,18 @@
 Vector Store Service - Qdrant for agent long-term memory.
 """
 
+import time
 import uuid
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    Range,
+    VectorParams,
+)
 
 from src.configs.config import QDRANT_HOST, QDRANT_PORT, MEMORY_COLLECTION, EMBEDDING_DIM
 
@@ -28,6 +37,16 @@ def ensure_collection():
         )
 
 
+def _visible_to(owner: str) -> Filter:
+    """Only this owner's memories that have not expired (isolation between people)."""
+    return Filter(
+        must=[
+            FieldCondition(key="owner", match=MatchValue(value=owner)),
+            FieldCondition(key="expires_at", range=Range(gt=time.time())),
+        ]
+    )
+
+
 def save_memory(text: str, embedding: list[float], metadata: dict = None):
     """Save a single memory entry to the vector store."""
     ensure_collection()
@@ -43,12 +62,13 @@ def save_memory(text: str, embedding: list[float], metadata: dict = None):
     _get_client().upsert(collection_name=MEMORY_COLLECTION, points=[point])
 
 
-def search_memory(query_vector: list[float], top_k: int = 5) -> list[dict]:
-    """Search memory by semantic similarity."""
+def search_memory(query_vector: list[float], owner: str, top_k: int = 5) -> list[dict]:
+    """Search one owner's unexpired memories by semantic similarity."""
     ensure_collection()
     results = _get_client().query_points(
         collection_name=MEMORY_COLLECTION,
         query=query_vector,
+        query_filter=_visible_to(owner),
         limit=top_k,
         with_payload=True,
     )

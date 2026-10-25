@@ -1,9 +1,12 @@
 """Tool definitions for Gmail search and read-only email access."""
 
-from src.registry.models import ToolDefinition
 from src.configs.tool_loader import tool_config
-from src.services.gmail_service import list_messages, read_message, search_and_read_messages
-
+from src.registry.models import ToolDefinition
+from src.services.gmail_service import (
+    list_messages,
+    read_message,
+    search_and_read_messages,
+)
 
 search_and_read_gmail_messages_tool = ToolDefinition(
     **tool_config("search_and_read_gmail_messages"),

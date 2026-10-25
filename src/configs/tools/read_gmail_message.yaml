@@ -12,3 +12,5 @@ input_schema:
   - message_id
 required_scopes:
 - gmail:read
+risk: low
+untrusted_output: true

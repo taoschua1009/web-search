@@ -18,6 +18,7 @@ service_account*.json
 service-account*.json
 .gmail-token-*
 /src/configs/secrets/
+/secrets/
 
 # Private key material.
 *.key
@@ -63,3 +64,8 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Research runtime and SQLite sidecars.
+.runtime/
+*.sqlite3-wal
+*.sqlite3-shm
