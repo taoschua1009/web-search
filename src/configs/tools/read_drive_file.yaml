@@ -1,0 +1,14 @@
+name: read_drive_file
+description: 'Read the content of a file from Google Drive by its file ID. Supports many formats: PDF,
+  DOCX, XLSX, PPTX, images, Google Docs/Sheets/Slides, text files, and more. Content is converted to Markdown
+  using MarkItDown. Use list_drive_files first to get file IDs.'
+input_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: The Google Drive file ID to read.
+  required:
+  - file_id
+required_scopes:
+- drive:read

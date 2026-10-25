@@ -1,0 +1,521 @@
+{
+  "uid": "ai-agent-overview",
+  "title": "AI Agent – Telemetry Overview",
+  "description": "Traces, Metrics for LLM calls, Tool pipeline, and HTTP API",
+  "tags": [
+    "ai-agent",
+    "opentelemetry"
+  ],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Agent Runs",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_runs_total[$__range]))",
+          "legendFormat": "Runs"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "LLM API Calls",
+      "type": "stat",
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_llm_calls_total[$__range]))",
+          "legendFormat": "LLM Calls"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Tool Calls",
+      "type": "stat",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "purple",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_tool_calls_total[$__range]))",
+          "legendFormat": "Tool Calls"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Tool Errors",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_tool_errors_total[$__range])) or vector(0)",
+          "legendFormat": "Errors"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Input Tokens (total)",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "orange",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_llm_input_tokens_total[$__range]))",
+          "legendFormat": "Input Tokens"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Output Tokens (total)",
+      "type": "stat",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "yellow",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_llm_output_tokens_total[$__range]))",
+          "legendFormat": "Output Tokens"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Estimated Cost (USD)",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(agent_agent_llm_cost_usd_total[$__range])) / 1000000",
+          "legendFormat": "Total Cost"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Cost / min (USD)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 6,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 5,
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(agent_agent_llm_cost_usd_total[1m]) * 60) / 1000000",
+          "legendFormat": "{{model}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "LLM Calls / min",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (stop_reason) (rate(agent_agent_llm_calls_total[1m]) * 60)",
+          "legendFormat": "{{stop_reason}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Token Usage / min",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(agent_agent_llm_input_tokens_total[1m]) * 60)",
+          "legendFormat": "Input Tokens/min"
+        },
+        {
+          "expr": "sum(rate(agent_agent_llm_output_tokens_total[1m]) * 60)",
+          "legendFormat": "Output Tokens/min"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "LLM Call Latency (P50 / P95 / P99)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(agent_agent_llm_latency_ms_milliseconds_bucket[5m])) by (le))",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(agent_agent_llm_latency_ms_milliseconds_bucket[5m])) by (le))",
+          "legendFormat": "P95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(agent_agent_llm_latency_ms_milliseconds_bucket[5m])) by (le))",
+          "legendFormat": "P99"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Tool Latency P95 by Tool",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, tool) (rate(agent_agent_tool_latency_ms_milliseconds_bucket[5m])))",
+          "legendFormat": "{{tool}} P95"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "title": "Tool Calls / min by Tool",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (tool, status) (rate(agent_agent_tool_calls_total[1m]) * 60)",
+          "legendFormat": "{{tool}} ({{status}})"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Tool Error Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 2
+          },
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "(sum by (tool) (rate(agent_agent_tool_errors_total[5m])) or sum by (tool) (rate(agent_agent_tool_calls_total[5m])) * 0) / sum by (tool) (rate(agent_agent_tool_calls_total[5m]))",
+          "legendFormat": "{{tool}}"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "title": "Traces — Search",
+      "description": "Click a Trace ID to open the span waterfall (agent.run → llm.call → tool.pipeline → steps)",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 12
+      },
+      "datasource": {
+        "uid": "tempo",
+        "type": "tempo"
+      },
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ resource.service.name = \"ai-agent\" && name = \"agent.run\" }",
+          "limit": 20,
+          "refId": "A",
+          "tableType": "traces",
+          "datasource": {
+            "uid": "tempo",
+            "type": "tempo"
+          }
+        }
+      ]
+    }
+  ]
+}

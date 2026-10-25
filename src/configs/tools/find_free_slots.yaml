@@ -1,0 +1,28 @@
+name: find_free_slots
+description: Find the user's free (available) time slots in Google Calendar within working hours. Returns,
+  per day, the gaps that are at least `duration_minutes` long. Use this when the user asks when they are
+  free or wants to find a time for a meeting.
+input_schema:
+  type: object
+  properties:
+    start_date:
+      type: string
+      description: First day to check, YYYY-MM-DD. Defaults to today.
+    end_date:
+      type: string
+      description: Last day to check, YYYY-MM-DD. Defaults to start_date (single day).
+    duration_minutes:
+      type: integer
+      description: Minimum slot length in minutes (default 30).
+    work_start:
+      type: string
+      description: Start of working hours, HH:MM (default 09:00).
+    work_end:
+      type: string
+      description: End of working hours, HH:MM (default 18:00).
+    skip_weekends:
+      type: boolean
+      description: Skip Saturday/Sunday (default true).
+  required: []
+required_scopes:
+- calendar:read

@@ -1,0 +1,79 @@
+# Observability stack for AI Agent
+#
+# Services:
+#   otel-collector  – receives OTLP from app, routes to Tempo + Prometheus
+#   tempo           – trace backend (Jaeger-compatible)
+#   prometheus      – metrics backend
+#   grafana         – dashboard UI  →  http://localhost:3000
+#
+# Usage:
+#   docker compose -f deploy/docker/docker-compose.yml up -d
+#   # then start the agent with:
+#   #   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 python -m src.api.server
+
+name: assignemnt-1
+
+services:
+
+  # ── OpenTelemetry Collector ────────────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ../../src/observability/otel-collector.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4318:4318"   # OTLP HTTP  ← agent app sends here
+    depends_on:
+      - tempo
+    restart: unless-stopped
+
+  # ── Grafana Tempo (trace storage) ─────────────────────────────────────────
+  tempo:
+    image: grafana/tempo:2.4.2
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ../../src/observability/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP API (Grafana datasource)
+    restart: unless-stopped
+
+  # ── Prometheus (metrics storage) ──────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ../../src/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"   # Prometheus UI
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+
+  # ── Grafana (dashboard) ───────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.3
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ../../src/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../src/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"   # Grafana UI  ← open this in browser
+    depends_on:
+      - prometheus
+      - tempo
+    restart: unless-stopped
+
+volumes:
+  tempo-data:
+  prometheus-data:
+  grafana-data:

@@ -1,0 +1,12 @@
+name: list_drive_files
+description: List all files in Google Drive. Returns file names, IDs, types, sizes, and modification times.
+  Optionally provide a folder_id to list files in a specific folder.
+input_schema:
+  type: object
+  properties:
+    folder_id:
+      type: string
+      description: Optional Google Drive folder ID to list files from. Leave empty for default folder.
+  required: []
+required_scopes:
+- drive:read

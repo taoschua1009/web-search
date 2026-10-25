@@ -1,0 +1,16 @@
+name: search_memory
+description: Search long-term memory for previously saved information. Uses semantic search to find the
+  most relevant memories. Use this to recall facts, user preferences, or past interactions.
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: Search query to find relevant memories.
+    top_k:
+      type: integer
+      description: 'Number of results to return (default: 5).'
+  required:
+  - query
+required_scopes:
+- memory:read

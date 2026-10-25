@@ -1,0 +1,17 @@
+name: save_memory
+description: Save important information to long-term memory for future reference. Use this to remember
+  facts, user preferences, conversation insights, or any information that should persist across conversations.
+  Provide a category to organize memories (e.g., 'user_preference', 'fact', 'task').
+input_schema:
+  type: object
+  properties:
+    content:
+      type: string
+      description: The information to remember.
+    category:
+      type: string
+      description: Category for organizing the memory (e.g., 'user_preference', 'fact', 'task', 'general').
+  required:
+  - content
+required_scopes:
+- memory:write

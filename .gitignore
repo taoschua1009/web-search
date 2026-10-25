@@ -1,0 +1,65 @@
+# Environment secrets; sanitized templates remain versioned.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Google credentials, OAuth tokens, and atomic token-write files.
+credential.json
+credential-*.json
+credential_*.json
+credentials*.json
+client_secret*.json
+token*.json
+*_token.json
+gmail_token*.json
+calendar_token*.json
+service_account*.json
+service-account*.json
+.gmail-token-*
+/src/configs/secrets/
+
+# Private key material.
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python environments and generated files.
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Local logs and persistent service data.
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+qdrant_storage/
+qdrant-storage/
+grafana-data/
+prometheus-data/
+tempo-data/
+
+# Operating system and editor artifacts.
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+*~

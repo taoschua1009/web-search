@@ -1,0 +1,45 @@
+# OpenTelemetry Collector
+# Receives OTLP from the agent app (port 4318 HTTP)
+# Routes:
+#   traces  → Grafana Tempo  (gRPC 4317)
+#   metrics → Prometheus scrape endpoint (8889)
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318      # agent app sends here
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317             # forward traces to Tempo
+    tls:
+      insecure: true
+
+  prometheus:
+    endpoint: 0.0.0.0:8889          # Prometheus scrapes here
+    namespace: agent
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  debug:
+    verbosity: basic                 # lightweight console log
+
+processors:
+  batch:
+    timeout: 5s
+  memory_limiter:
+    limit_mib: 256
+    check_interval: 5s
+
+service:
+  pipelines:
+    traces:
+      receivers:  [otlp]
+      processors: [memory_limiter, batch]
+      exporters:  [otlp/tempo, debug]
+
+    metrics:
+      receivers:  [otlp]
+      processors: [memory_limiter, batch]
+      exporters:  [prometheus, debug]
